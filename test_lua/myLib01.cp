@@ -33,6 +33,15 @@ static const struct luaL_Reg myLib[] =
 
 int luaopen_myLib01(lua_State *L)
 {
-    luaL_register(L, "ss", myLib);
+    const luaL_Reg* libf =myLib;
+    for (; libf->func; libf++)
+    {
+        //把foo函数注册进lua，第二个参数代表Lua中要调用的函数名称，第三个参数就是c层的函数名称
+        lua_register(L,libf->name,libf->func);
+        //将栈顶清空
+        lua_settop(L,0);
+    }
+    
+//    luaL_register(L, "ss", myLib);
     return 1;		// 把myLib表压入了栈中，所以就需要返回1
 }

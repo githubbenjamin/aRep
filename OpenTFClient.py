@@ -16,7 +16,7 @@
     5. catch the <KeyboardInterrupt> void exception message.
     
     todo:
-        1. add <Command-X> to triger buttonX click.
+        1. add <Command-X> to triger sendX click.
         2.
     """
 
@@ -31,17 +31,29 @@ import time
 import socket
 import os
 
-from sc import *
+#from sc import *
 
 import urllib
 import httplib
 
+#from Tkinter import Text
+from idlelib.WidgetRedirector import WidgetRedirector
+
+class ReadOnlyScrolledText(ScrolledText):
+    def __init__(self, *args, **kwargs):
+        Text.__init__(self, *args, **kwargs)
+        self.redirector = WidgetRedirector(self)
+        self.insert = \
+            self.redirector.register("insert", lambda *args, **kw: "break")
+        self.delete = \
+            self.redirector.register("delete", lambda *args, **kw: "break")
 class OTF_TR(object):
     def __init__(self, initdir=None):
 #        self.finishInit = False
         self.top = Tk()
         self.top.wm_title('OpenTF Client v0.1.1')
-#        self.top.wm_minsize(width=600, height=600)
+#        self.top.wm_minsize(width=600, height=400)
+        self.top.resizable(width=False, height=False)
 
         self.top.rowconfigure(0, weight=1)
         self.top.columnconfigure (0, weight=1)
@@ -59,7 +71,7 @@ class OTF_TR(object):
         msgC = self.configure.getValueByKey('msg_count')
         if msgC==None or msgC=='' or not msgC.isdigit():
             # default value
-            self.msg2send = ["Send_msg,@", "Check_status,@", "C39123456:0,@", "Ack,@", "C39123456:2:1,@", ""]
+            self.msg2send = ["Send_msg,@", "C39123456:0,@", "C39123456:2:1,@", "Check_status,@", "Ack,@",  ""]
         else:
             for i in range(0, int(msgC)):
                 msg = self.configure.getValueByKey('msg%s'%i)
@@ -98,8 +110,12 @@ class OTF_TR(object):
         
         aeflist = self.http_util('aefl').split('::')
 #        print 'ae file list: %s'%aeflist
+        for i in aeflist:
+            if not i.endswith('.xlsx'):
+                aeflist.remove(i)
         self.optionVar = StringVar()
         if aeflist!=None and len(aeflist)!=0 and not aeflist[0]=='':
+            
             self.xBt = Button(self.top, text='.X.', command=self.xa)
             self.xBt.grid(row=1, column=2, sticky='e')
             
@@ -117,9 +133,9 @@ class OTF_TR(object):
         
         self.freshSendFB(2)
         
-        self.text = ScrolledText(self.top)
-        self.text.grid(row=2+len(self.msg2send)/2, column=1, rowspan=1, columnspan=4)
-        self.text.config(font=("consolas", 12), undo=False, wrap='word', state=DISABLED)
+        self.text = ReadOnlyScrolledText(self.top)
+        self.text.grid(row=2+len(self.msg2send)/2, column=1, rowspan=1, columnspan=3)
+        self.text.config(font=("consolas", 12), undo=False, wrap='word', state='normal')
 #        print self.text.keys()
 
         ip_t = self.configure.getValueByKey('ip')
@@ -167,7 +183,7 @@ class OTF_TR(object):
             self.configure.setValueByKey(port, 'port')
         
         ##
-        self.logger.info("system quit.")
+        self.logger.info("system quit.\n")
 #        print 'on closing'
 #        if self.socket != None:
 #            self.socket.close()
@@ -341,17 +357,17 @@ class OTF_TR(object):
 #                print 'socket:',self.socket
 #                print ' ----:',self.socket.getpeername()
                 return
-#            print 'recevie << %s'%rcv
+            print 'recevie << %s'%rcv
             self.append2text("<<%s\n"%rcv)
             self.logger.info('recevie << %s'%rcv)
             time.sleep(0.2)
 #        print 222222
     #break
     def append2text(self, msg):
-        self.text.config(state='normal')
+#        self.text.config(state='normal')
         self.text.insert(END, msg)
         self.text.see(END)
-        self.text.config(state='disabled')
+#        self.text.config(state='disabled')
 #        pt = self.text.get(0.0, END)
 #        if len(pt)>=1 and pt[-1].isspace():
 #            pt = pt[:-1]
@@ -399,9 +415,9 @@ class OTF_TR(object):
             time.sleep(0.2)
 
     def clearText(self):
-        self.text.config(state='normal')
+#        self.text.config(state='normal')
         self.text.delete(0.0, END)
-        self.text.config(state='disabled')
+#        self.text.config(state='disabled')
 
     def http_util(self, cmd_key):
         if cmd_key not in ['aefl', 'ullimits']:
@@ -446,6 +462,109 @@ class OTF_TR(object):
         
         return logger
 
+
+"""
+    SystemConfigure
+    author: Benjamin
+    version: 0.1.7
+    date: 2016-05-06
+    
+    v0.1.7 2016-05-06
+    1. create new file when the configure file not exist for Class SystemConfigure.
+    2. save xml file with pretty format for Class SystemConfigure.
+    3. change the judge condition when adding 'w' mode to configure file.
+    
+    2015-10-29
+    system configure
+    2015-11-04 debug
+    """
+import xml.dom.minidom
+import os
+
+def printGreen(msg):
+    print '\33[0m\33[32m'+msg+'\33[0m'
+
+def printRed(msg):
+    print '\33[0m\33[31m'+msg+'\33[0m'
+
+
+class SystemConfigure:
+    '''System Configure
+        impliment system configure function by key&value structure.
+        note,
+        usually you need invoke the save() method to write data to local file after setting and removing action.
+        '''
+    def __init__(self,xmlFilePath="systemconfig.xml"):
+        self.filePath = xmlFilePath
+        try:
+            self.xmlDoc = xml.dom.minidom.parse(self.filePath)
+        except xml.parsers.expat.ExpatError:
+            print "read xml file fail"
+            self.newNoneKeyFile()
+            self.xmlDoc = xml.dom.minidom.parse(self.filePath)
+        #            return
+        except IOError:
+            print "IO error,"
+            self.newNoneKeyFile()
+            self.xmlDoc = xml.dom.minidom.parse(self.filePath)
+    
+        #check file writable mode
+        file_state = os.stat(xmlFilePath)
+        #        print '---%o'%file_state.st_mode
+        is_writable = file_state.st_mode&0100200
+        #        print '---%o'%is_writable
+        if is_writable not in [0100200]:
+            os.chmod(xmlFilePath,file_state.st_mode+0000200)
+        #        print '---%o'%os.stat(xmlFilePath).st_mode
+        
+        self.topElement = self.xmlDoc.documentElement
+    def newNoneKeyFile(self):
+        'new a none key file. automatical invoke while configure file not exists.'
+        tmpfile = open(self.filePath, "w")
+        tmpfile.writelines(['''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<root>\n</root>'''])
+        tmpfile.close()
+    
+    def getValueByKey(self, key):
+        'get value by the key.'
+        try:
+            aChild = self.topElement.getElementsByTagName(key)[0]
+        except IndexError:
+            return None
+        #        print str(aChild.firstChild)
+        if aChild.firstChild==None:
+            return ''
+        else:
+            return aChild.firstChild.data
+    def setValueByKey(self,value, key):
+        'set value by key.'
+        theChilds = self.topElement.getElementsByTagName(key)
+        if not theChilds.length ==0:
+            if theChilds[0].firstChild==None:
+                text = self.xmlDoc.createTextNode(value)
+                theChilds[0].appendChild(text)
+            else:
+                theChilds[0].firstChild.data = value
+        else:
+            aElement = self.xmlDoc.createElement(key)
+            text = self.xmlDoc.createTextNode(value)
+            aElement.appendChild(text)
+            self.topElement.appendChild(aElement)
+    def removeByKey(self,key):
+        'remove the node by the key.'
+        theChilds = self.topElement.getElementsByTagName(key)
+        for aChild in theChilds:
+            self.topElement.removeChild(aChild)
+    def save(self):
+        'manually invake if needing to update local configure file.'
+        f = open(self.filePath, "w")
+        allXmlLines = self.xmlDoc.toprettyxml(indent = "\t", newl = "\n", encoding = "utf-8").split("\n")
+        allLines2write = []
+        for aline in allXmlLines:
+            if cmp(aline.strip(),"")==0:
+                continue
+            allLines2write.append(aline+'\n')
+        f.writelines(allLines2write)
+        f.close()
 
 def main():
     try:

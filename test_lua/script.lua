@@ -13,3 +13,14 @@ package.cpath = package.cpath .. ";?.dylib"
 print(package.cpath)
 rtn = require ("myLib01")
 print(rtn)
+
+
+local host, port = "127.0.0.1", 2942
+local ss = assert(socket.tcp())
+print("socket tcp initial success")
+ss:bind(host, port)
+ss:listen(3)
+client = ss:accept()
+client:send("get connect ok\n")
+rc = client:receive("*l")
+print("receive:"..rc)

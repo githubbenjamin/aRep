@@ -3,19 +3,13 @@
 summery
 =======
 
-this rep is for collecting some codes that i value during working.
+this rep is for collecting some codes that I value during working.
 
-OTFClient
-==========
+SocketClient
+============
 this is a socket client.
 
-    v0.1.1
-    1. record, always log and show on UI during testing process.
-    2. configer, auto save current data to system configure file. the number of send-button is configurable.
-    3. auto testing, 
-    4. get testing data, connect to the server to get special station upper&lower limits data. 
-        usage:
-            a. choose limits file
-            b. fill the station name then
-            c. click <Enter> in the station name Entry.
-    5. catch the <KeyboardInterrupt> void exception message.
+Lua Parser
+==========
+this is not a full project but some pices of work after learing lua. I'm wondering what kind of project I can do using this lua-parsing way.
+add lua parser for your own app by importing the lua source. then, register function for your own need. load useful third part lib from source.

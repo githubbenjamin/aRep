@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-    OpenTF Client
+    Socket Client
     
     update
     v0.1.1

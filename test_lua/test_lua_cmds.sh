@@ -10,3 +10,5 @@ git clone -b unstable git://github.com/diegonehab/luasocket.git
 cd luasocket
 make macosx
 sudo make install
+
+make DEBUG=DEBUG PLAT=macosx LUAINC_macosx_base=/Users/diego/build/macosx/include LUAPREFIX_macosx=/Users/diego/build/macosx  install-both

@@ -11,3 +11,5 @@ resource
 
 
 [GitHub](http://github.com)
+
+[dlbook cn](https://github.com/exacity/deeplearningbook-chinese/releases/download/v0.3-alpha/dlbook_cn_v0.3-alpha.pdf)
